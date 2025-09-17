@@ -1,48 +1,26 @@
 package com.example.entrevista_payment;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import lombok.Builder;
-
-import java.math.BigDecimal;
+import com.azure.spring.data.cosmos.core.mapping.Container;
+import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import org.springframework.data.annotation.Id;
 import java.time.Instant;
-import java.util.UUID;
 
+// Modelo para la Transacción que se guarda en Cosmos DB
+@Data
 @Builder
-public record Transaction(
-        String id,
+@Container(containerName = "transactions")
+public class Transaction {
+    @Id
+    private String id;
 
-        @JsonProperty("order_id")
-        String orderId,
+    @PartitionKey
+    private String orderId;
 
-        @JsonProperty("customer_id")
-        String customerId,
-
-        BigDecimal amount,
-
-        TransactionStatus status,
-
-        @JsonProperty("processed_at")
-        Instant processedAt,
-
-        @JsonProperty("items_count")
-        int itemsCount
-) {
-
-    public static Transaction from(Order order, TransactionStatus status) {
-        return Transaction.builder()
-                .id(UUID.randomUUID().toString())
-                .orderId(order.orderId())
-                .customerId(order.customerId())
-                .amount(order.totalAmount())
-                .status(status)
-                .processedAt(Instant.now())
-                .itemsCount(order.items().size())
-                .build();
-    }
-
-    public enum TransactionStatus {
-        PENDING,
-        PROCESSED,
-        FAILED
-    }
+    private String customerId;
+    private Double amount;
+    private String status; // COMPLETED, FAILED
+    private Instant timestamp;
+    private Instant processedAt;
 }
