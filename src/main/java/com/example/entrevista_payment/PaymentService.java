@@ -17,19 +17,29 @@ import java.util.UUID;
 public class PaymentService {
 
     private final TransactionRepository transactionRepository;
+    private final Optional<BlobAuditService> blobAuditService; // Optional para manejar cuando está deshabilitado
 
-    // Procesa una orden y crea una transacción
+    // Procesa una orden y crea una transacción con auditoría
     public Mono<Transaction> processPayment(Order order) {
+        Instant startTime = Instant.now(); // Para calcular tiempo de procesamiento
+
         return validateOrder(order)
                 .flatMap(this::createTransaction)
                 .flatMap(this::saveTransaction)
+                .flatMap(transaction -> auditSuccessfulTransaction(order, transaction, startTime)
+                        .then(Mono.just(transaction))) // Continúa con la transacción después de auditar
                 .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
                         .doBeforeRetry(signal ->
                                 log.warn("Reintento #{} para orden {}",
                                         signal.totalRetries() + 1, order.getOrderId())))
                 .doOnSuccess(t -> log.info("✅ Transacción completada: {}", t.getId()))
-                .doOnError(e -> log.error("❌ Error procesando orden {}: {}",
-                        order.getOrderId(), e.getMessage()));
+                .doOnError(e -> {
+                    log.error("❌ Error procesando orden {}: {}", order.getOrderId(), e.getMessage());
+                    // En caso de error, solo logueamos que no se pudo auditar
+                    blobAuditService.ifPresent(auditService ->
+                            log.warn("⚠️ No se pudo realizar la auditoría para orden fallida: {}", order.getOrderId())
+                    );
+                });
     }
 
     // Valida la orden usando Optional y streams
@@ -52,10 +62,13 @@ public class PaymentService {
                     .allMatch(item ->
                             Optional.ofNullable(item.getQuantity())
                                     .filter(qty -> qty > 0)
-                                    .isPresent());
+                                    .isPresent() &&
+                                    Optional.ofNullable(item.getProductId())
+                                            .filter(productId -> !productId.trim().isEmpty())
+                                            .isPresent());
 
             if (!itemsValidos) {
-                throw new IllegalArgumentException("Items con cantidad inválida");
+                throw new IllegalArgumentException("Items con datos inválidos");
             }
 
             log.debug("Orden {} validada correctamente", order.getOrderId());
@@ -85,5 +98,13 @@ public class PaymentService {
     private Mono<Transaction> saveTransaction(Transaction transaction) {
         return transactionRepository.save(transaction)
                 .doOnSuccess(t -> log.debug("Transacción {} guardada en Cosmos DB", t.getId()));
+    }
+
+    // Audita transacción exitosa en Blob Storage
+    private Mono<Void> auditSuccessfulTransaction(Order order, Transaction transaction, Instant startTime) {
+        return blobAuditService
+                .map(auditService -> auditService.auditSuccessfulTransaction(order, transaction, startTime))
+                .orElse(Mono.empty()) // Si no hay servicio de auditoría, no hace nada
+                .doOnSubscribe(s -> log.debug("Iniciando auditoría para transacción: {}", transaction.getId()));
     }
 }

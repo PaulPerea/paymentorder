@@ -7,7 +7,8 @@ azure:
     queue:
       connection-string: ${AZURE_STORAGE}
       queue-name: orders
-
+    blob:
+      connection-string: ${AZURE_STORAGE}
   cosmos:
     endpoint: https://127.0.0.1:8081
     key: ${AZURE_COSMOS}
@@ -19,6 +20,9 @@ azure:
     content-response-on-write-enabled: true
     endpoint-discovery-enabled: false
     read-requests-fallback-enabled: false
+
+audit:
+  enabled: true
 
 payment:
   processor:
