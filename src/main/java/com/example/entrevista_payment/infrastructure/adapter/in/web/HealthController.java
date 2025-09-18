@@ -1,5 +1,6 @@
-package com.example.entrevista_payment;
+package com.example.entrevista_payment.infrastructure.adapter.in.web;
 
+import com.example.entrevista_payment.domain.port.in.GetTransactionCountUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,7 +12,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class HealthController {
 
-    private final TransactionRepository repository;
+    private final GetTransactionCountUseCase getTransactionCountUseCase;
 
     @GetMapping
     public Mono<String> health() {
@@ -20,7 +21,6 @@ public class HealthController {
 
     @GetMapping("/transactions/count")
     public Mono<Long> getTransactionCount() {
-        return repository.findAll()
-                .count();
+        return getTransactionCountUseCase.getTransactionCount();
     }
 }

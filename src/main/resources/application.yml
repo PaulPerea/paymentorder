@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: payment-processor
@@ -13,19 +16,10 @@ azure:
     endpoint: https://127.0.0.1:8081
     key: ${AZURE_COSMOS}
     database: TransactionsDB
-    container: transactions
-    consistency-level: SESSION
-    populate-query-metrics: false
-    connection-sharing-across-clients-enabled: false
-    content-response-on-write-enabled: true
-    endpoint-discovery-enabled: false
-    read-requests-fallback-enabled: false
 
 audit:
   enabled: true
 
 payment:
   processor:
-    polling-interval-ms: 15000  # Revisa cola cada 15 segundos
-    max-retries: 3
-    retry-delay-ms: 1000
+    polling-interval-ms: 15000  # Cambiar a 10 minutos ahora esta en 15

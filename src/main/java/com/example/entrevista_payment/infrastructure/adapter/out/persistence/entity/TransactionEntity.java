@@ -1,17 +1,21 @@
-package com.example.entrevista_payment;
+package com.example.entrevista_payment.infrastructure.adapter.out.persistence.entity;
 
-import lombok.Data;
-import lombok.Builder;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+
 import java.time.Instant;
 
-// Modelo para la Transacción que se guarda en Cosmos DB
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Container(containerName = "transactions")
-public class Transaction {
+public class TransactionEntity {
     @Id
     private String id;
 
@@ -20,7 +24,7 @@ public class Transaction {
 
     private String customerId;
     private Double amount;
-    private String status; // COMPLETED, FAILED
+    private String status;
     private Instant timestamp;
     private Instant processedAt;
 }
